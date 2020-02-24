@@ -1,0 +1,235 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Question 1 (Chapter 6, #8, parts (a)-(e), 10 marks)
+
+
+(a) (1 mark)
+(Note: You should set your random seed, for reproducibility.)
+```{r}
+set.seed(1)
+X <- rnorm(100)
+err <- rnorm(100)
+```
+
+(b) (1 mark)
+```{r}
+b0 <- 3
+b1 <- 2
+b2 <- 1
+b3 <- -1
+Y <- b0 + (b1 * X) + (b2 * X^2) + (b3 * X^3) + err
+```
+
+
+(c) (3 marks)
+For the "best model obtained", you should 
+use one that is parsimonious and close to
+the consensus best according tht the three
+selection criteria.
+
+You don't **have** to create a data frame. 
+`regsubsets()` can take a design matrix and
+response vector, just like `lm.fit()` and 
+`glmnet()`. If you do decide to create a data frame,
+the following hint may be of use:
+```{r}
+library(leaps)
+pmax <- 10
+Xmat <- matrix(NA,nrow=100,ncol=pmax)
+for(i in 1:pmax) {
+  Xmat[,i] <- X^i
+}
+colnames(Xmat) <- paste0("X.",1:pmax)
+dat <- data.frame(Y,Xmat)
+dat
+```
+
+```{r}
+regfit.full <- regsubsets(Y ~ ., data=dat ,nvmax=10)
+reg.summary <- summary(regfit.full)
+par(mfrow = c(2, 2))
+
+plot(reg.summary$cp, xlab = "Number of variables", ylab = "C_p", type = "l")
+best_Cp = which.min(reg.summary$cp)
+points(best_Cp,reg.summary$cp[best_Cp], col="red", cex=2, pch=20)
+
+plot(reg.summary$bic, xlab = "Number of variables", ylab = "BIC", type = "l")
+best_BIC = which.min(reg.summary$bic)
+points(best_BIC,reg.summary$bic[best_BIC], col="red", cex=2, pch=20)
+
+plot(reg.summary$adjr2, xlab = "Number of variables", ylab = "Adjusted R^2", type = "l")
+best_adjr2 = which.max(reg.summary$adjr2)
+points(best_adjr2,reg.summary$adjr2[best_adjr2], col="red", cex=2, pch=20)
+mtext('Plots for Best Subset Selection', side=3,line = -1, outer=TRUE)
+```
+
+(d) (2 marks) 
+```{r}
+regfit.fwd = regsubsets(Y ~ ., data=dat, nvmax=10, method ="forward")
+reg.summary.fwd = summary(regfit.fwd)
+par(mfrow = c(2, 2))
+
+plot(reg.summary.fwd$cp, xlab = "Number of variables", ylab = "C_p", type = "l")
+best_Cp.fwd = which.min(reg.summary.fwd$cp)
+points(best_Cp.fwd,reg.summary.fwd$cp[best_Cp.fwd], col="red", cex=2, pch=20)
+
+plot(reg.summary.fwd$bic, xlab = "Number of variables", ylab = "BIC", type = "l")
+best_BIC.fwd = which.min(reg.summary.fwd$bic)
+points(best_BIC.fwd,reg.summary.fwd$bic[best_BIC.fwd], col="red", cex=2, pch=20)
+
+plot(reg.summary.fwd$adjr2, xlab = "Number of variables", ylab = "Adjusted R^2", type = "l")
+best_adjr2.fwd = which.max(reg.summary.fwd$adjr2)
+points(best_adjr2.fwd,reg.summary.fwd$adjr2[best_adjr2.fwd], col="red", cex=2, pch=20)
+mtext('Plots for Forward Stepwise Selection', side=3,line = -1, outer=TRUE)
+
+
+
+regfit.bwd = regsubsets(Y ~ ., data=dat, nvmax=10, method ="backward")
+reg.summary.bwd = summary(regfit.bwd)
+par(mfrow = c(2, 2))
+
+plot(reg.summary.bwd$cp, xlab = "Number of variables", ylab = "C_p", type = "l")
+best_Cp.bwd = which.min(reg.summary.bwd$cp)
+points(best_Cp.bwd, reg.summary.bwd$cp[best_Cp.bwd], col="red", cex=2, pch=20)
+
+plot(reg.summary.bwd$bic, xlab = "Number of variables", ylab = "BIC", type = "l")
+best_BIC.bwd = which.min(reg.summary.bwd$bic)
+points(best_BIC.bwd, reg.summary.bwd$bic[best_BIC.bwd], col="red", cex=2, pch=20)
+
+plot(reg.summary.bwd$adjr2, xlab = "Number of variables", ylab = "Adjusted R^2", type = "l")
+best_adjr2.bwd = which.max(reg.summary.bwd$adjr2)
+points(best_adjr2.bwd, reg.summary.bwd$adjr2[best_adjr2.bwd], col="red", cex=2, pch=20)
+mtext('Plots for Backward Stepwise Selection', side=3, line = -1, outer=TRUE)
+```
+
+(e) (3 marks)
+
+```{r}
+#install.packages('glmnet')
+library(glmnet)
+lambdas <- 10^{seq(from=-2,to=5,length=100)}
+cv.lafit <- cv.glmnet(Xmat,Y,alpha=1,lambda=lambdas) 
+plot(cv.lafit)
+la.best.lam <- cv.lafit$lambda.1se
+```
+
+Optimal Value of Lamda according to Cross Validation is:
+```{r}
+la.best.lam
+```
+
+Resulting coefficient estimates are:
+```{r}
+la.best <- glmnet(Xmat,Y,alpha=1,lambda=la.best.lam)
+#predict(la.best, s = la.best.lam, type = "coefficients")[1:11, ]
+coef(la.best)
+```
+
+Lasso regression model chose variables X, $X^2$, $X^3$, $X^4$ and $X^5$.
+
+
+## Question 2 (Ch6, #9, 12 marks)
+
+(a) (0 marks)
+To make everyone's results comparable, please
+select your test set with the following.
+(Note that we scale all columns, including the response.)
+
+```{r}
+library(ISLR)
+data(College)
+#install.packages('dplyr')
+library(dplyr)
+College <- mutate(College,Private = as.numeric(Private=="Yes"))
+College <- data.frame(lapply(College,scale))
+dim(College) # 777 rows, use 111 as test
+set.seed(1)
+testset <- sample(1:777,size=111)
+College.test <- College[testset,]
+College.train <- College[-testset,]
+#dim(College.train)
+#dim(College.test)
+```
+
+(b) (2 marks)
+
+(c) (2 marks)
+
+(d) (2 marks)
+
+(e) (2 marks)
+
+(f) (2 marks)
+
+(g) (2 marks)
+
+
+## Question 3 (Ch7, #6, 8 marks)
+
+(a) (5 marks)
+```{r}
+library(ISLR)
+attach(Wage)
+# Getting optimal degree for polynomial using Cross Validation
+library(boot)
+set.seed(4)
+cv_error <- rep(0,10)
+cv_error
+for (i in 1:10){
+  fit <- glm(wage ~ poly(age,i), data=Wage)
+  cv_error[i] <- cv.glm(Wage, fit, K=10)$delta[1]
+}
+cv_error
+
+plot(cv_error, xlab = "Degree", ylab = "Test MSE", type = "l")
+opt_deg <- which.min(cv_error)
+points(opt_deg, cv_error[opt_deg], col = "red", cex = 2, pch = 20)
+
+
+#Getting optimal degree using ANOVA
+fit.1 <- lm(wage~age, data=Wage)
+fit.2 <- lm(wage~poly(age,2), data=Wage)
+fit.3 <- lm(wage~poly(age,3), data=Wage)
+fit.4 <- lm(wage~poly(age,4), data=Wage)
+fit.5 <- lm(wage~poly(age,5), data=Wage)
+anova(fit.1,fit.2,fit.3,fit.4,fit.5)
+
+
+#plot of resulting polynomial fit
+res_fit <- lm(wage~poly(age,3), data=Wage)
+agelims <- range(age)
+age.grid <- seq(from=agelims[1], to=agelims[2])
+preds <- predict(res_fit, newdata=list(age=age.grid))
+plot(age, wage, xlim=agelims, cex=0.5, col="darkgrey")
+title("Degree - 3 Polynomial ",outer=T)
+lines(age.grid, preds, lwd=2, col="blue")
+```
+
+
+(b) (3 marks)
+```{r}
+# Fit step function to predict wage and age
+s_cv_error <- rep(NA,10)
+for (i in 2:10){
+  Wage$tmp <- cut(Wage$age,i)
+  s_fit <- glm(wage ~ tmp, data=Wage)
+  s_cv_error[i] <- cv.glm(Wage, s_fit, K=10)$delta[1]
+}
+
+s_opt_deg <- which.min(s_cv_error)
+
+step_fit <- lm(wage~cut(age ,s_opt_deg), data=Wage)
+agelims <- range(age)
+age.grid <- seq(from=agelims[1], to=agelims[2])
+preds <- predict(step_fit, newdata=list(age=age.grid))
+plot(age, wage, xlim=agelims, cex=0.5, col="darkgrey")
+lines(age.grid, preds, lwd=2, col="blue")
+```
+

@@ -1,0 +1,136 @@
+---
+  title: "Homework 1"
+output: html_document
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1 (Chapter 2, #1, 8 marks)
+
+(a) A flexible model is better. Since we have large sample size and small number of predictors, we can fit the model closer to data and have better performance without overfitting.
+
+(b) A flexible model is worse. As the number of observations is very small and number of predictors is extremely large, a flexible model would have problems of high variance due to over-fitting and fitting outliers.
+
+(c) A flexible model would fit better. If the relationship between the predictors and response is highly non-linear, a flexible model will be less restrictive on the shape of fit. With more degrees of freedom, a flexible method would fit better.
+
+(d) A flexible model is worse. A flexible model will further increase the variance by fitting to noise terms. 
+
+
+## Question 2 (Chapter 2, #2, 6 marks)
+
+(a)
+* Regression  # predicting a continuous quantity output (CEO salary)  
+* Inference   # determining relationship between predictors and output(CEO salary)
+* n = 500 observations #collected data belongs to 500 firms in US
+* p = 3 variables
+* profit
+* number of employees
+* industry
+
+(b) 
+* Classification # predicting discrete class labels, success/failure
+* Prediction  # interested only about outcomes(success or failure) and not the relationship
+* n = 20 observations  #data for 20 similar products are collected
+* p = 13 variables  
+* price charged for products
+* marketing budget
+* competition price
+* ten other variables
+
+
+(c) 
+* Regression  #the result (% change in the US Dollar) is quantitative
+* Prediction  #interested only in % change of USD
+* n = 52 weekly observations  #No of weeks in the year 2012
+* p = 3 variables
+* % change in the US market
+* % change in the British market
+* % change in the German market
+
+## Question 3 (Chapter 2, #9, 8 marks)
+
+```{r}
+#install.packages("ISLR")
+library(ISLR)
+data(Auto)
+head(Auto)
+autodata <- na.omit(Auto) #used to get rid of the missing values
+attach(autodata) #tells R to make the variables in this data frame available by name
+```
+<br/>
+  
+  (a) Quantitative Predictors: mpg, cylinders, displacement, horsepower, weight, acceleration, year
+Qualitative Predictors: Origin(needs to be factored as qualitative), name
+
+* Cylinders can also be treated as qualitative predictor.
+<br/>
+  
+  (b) The range of each quantitative predictor can be given by: 
+  ```{r}
+sapply(autodata[,1:7],range) #it applies range function over all seven quantitative predictors where first row signifies minimum values of each predictor and the second row shows the maximum values of predictors 
+```
+<br/>
+  
+  (c) The mean and standard deviation of each quantitative predictor is given by:
+  ```{r}
+meansd <- function(x) {
+  out<-c(mean(x),sd(x))
+  names(out) <- c("mean","SD")
+  out
+}
+
+apply(autodata[,1:7],MARGIN=2,FUN=meansd)
+```
+<br/>
+  
+  (d) 10th through 85th observations can be removed using:
+  ```{r}
+AutoSubset <- autodata[-c(10:85),c(1:7)]
+```
+
+The range, mean, and standard deviation of each predictor in the subset of the data that remains:
+  ```{r}
+sapply(AutoSubset[,1:7],range) #first row in the output signifies minimum values of each predictor and the second row shows the maximum values of predictors 
+sapply(AutoSubset[,1:7],mean)
+sapply(AutoSubset[,1:7],sd)
+```
+
+<br/>
+  
+  (e) Relationship among predictors: 
+  
+  Some plots depicting relationship between predictors are shown below:
+  ```{r}
+pairs(autodata) #creates a scatterplot for every pair of predictors in Auto data set
+plot(cylinders,mpg)
+plot(mpg,displacement)
+plot(mpg,horsepower)
+plot(mpg,weight)
+plot(year,mpg)
+
+plot(cylinders,displacement)
+plot(cylinders,acceleration)
+
+as.factor(origin)
+boxplot(origin,mpg)
+```
+
+* mpg is inversely related to displacement, horsepower and weight, however, it increases as year increases.
+* mpg is maximum for 4 cylinders as compared to others. mpg is inversely related to cylinders.
+* cylinders is positively related to displacement, horsepower and weight but negatively related to acceleration.
+
+<br/>
+  
+  (f) Correlation Matrix representing correlation between predictors:
+  ```{r}
+#install.packages("GGally")
+library("ggplot2")
+library("GGally") #using GGally to plot correlation matrix
+ggcorr(autodata, label=TRUE) # command to plot correlation matrix
+```
+
+From the graphical plots of pairs(autodata) and correlation matrix we can say that: <br/>
+  displacement and weight are highly correlated to horsepower.
+<br/> cylinders, horsepower, year and origin can be used as strong predictors to predict gas mileage(mpg).

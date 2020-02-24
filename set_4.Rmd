@@ -1,0 +1,139 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Question 1 (Chapter 3, #3, 6 marks)
+Given:
+Predictors: $X_1$=GPA,  $X_2$=IQ,  $X_3$=Gender(1 for Female, 0 for Male),  $X_4$=Interaction between GPA and IQ,  $X_5$=Interaction between GPA and Gender <br/>
+Response: Starting Salary after graduation(in thousands of dollars) <br/>
+Coefficient Estimates: $\hat{\beta_0}$=50, $\hat{\beta_1}$=20, $\hat{\beta_2}$=0.07, $\hat{\beta_3}$=35, $\hat{\beta_4}$=0.01, $\hat{\beta_5}$=-10 <br/>
+
+(a) Based on information given in question, using least squares to fit the model, the relationship between response and predictors can be respresented by the following equation: <br/>
+Let response be represented by Y. Therefore, prediction for starting salary after graduation will be $\hat{Y}$ <br/>
+
+$\hat{Y}$ = $\hat{\beta_0}$ + $\hat{\beta_1}$$X_1$ + $\hat{\beta_2}$$X_2$ + $\hat{\beta_3}$$X_3$ + $\hat{\beta_4}$$X_4$ + $\hat{\beta_5}$$X_5$ <br/>
+
+Substituting values for predictors and coefficient estimates as given in question, we get: <br/>
+$\hat{Y}$ = 50 + (20 x GPA) + (0.07 x IQ) + (35 x Gender) + (0.01 x Interaction between GPA and IQ) + 
+((-10) x Interaction between GPA and Gender) <br/>
+
+Interaction between a and b can be represented by their product. Thus, we get <br/>
+$\hat{Y}$ = 50 + (20 x GPA) + (0.07 x IQ) + (35 x Gender) + (0.01 x GPA x IQ) + 
+((-10) x GPA x Gender) <br/>
+
+Substituting Gender=1, we get prediction for starting salary for Females: <br/>
+$\hat{Y}_f$ = 50 + (20 x GPA) + (0.07 x IQ) + 35 + (0.01 x GPA x IQ) + (-10 x GPA) <br/>
+$\hat{Y}_f$ = 85 + (10 x GPA) + (0.07 x IQ) + (0.01 x GPA x IQ) <br/>
+
+Similarly, prediction for starting salary for males(Gender=0) is represented by: <br/>
+$\hat{Y}_m$ = 50 + (20 x GPA) + (0.07 x IQ) + (0.01 x GPA x IQ) <br/>
+
+Since the value of IQ and GPA is fixed(IQ x GPA is fixed), so prediction for starting salary for both females and males depends on GPA. <br/>
+
+85 + (10 x GPA) $\leq$ 50 + (20 x GPA), if GPA is high enough <br/>
+
+Thus, For a fixed value of IQ and GPA, males earn more on average than females provided that the GPA is high enough(Option 3)
+<br/>
+
+(b) As seen in part(a), prediction for starting salary for females(Gender=1) is represented by: <br/>
+$\hat{Y}_f$ = 85 + (10 x GPA) + (0.07 x IQ) + (0.01 x GPA x IQ) <br/>
+Given: IQ=110 and GPA=4, we get <br/>
+$\hat{Y}_f$ = 85 + (10 x 4) + (0.07 x 110) + (0.01 x 4 x 110) <br/>
+$\hat{Y}_f$ = 85 + 40 + 7.7 + 4.4 <br/>
+$\hat{Y}_f$ = 137.1 <br/>
+
+Thus, for given values of IQ and GPA, the predicted starting salary for females after graduation is 137.1(in thousand dollars) <br/>
+
+(c) False (WE NEED TO FIND P_VALUES I GUESS)
+
+## Question 2 (Chapter 3, #9, 10 marks)
+
+```{r}
+library(ISLR) 
+data(Auto)
+library(dplyr)
+Auto <- 
+  Auto %>% select(-name) %>% mutate(origin = factor(origin))
+head(Auto)
+attach(Auto)
+```
+
+(a) Scatterplot matrix which includes all of the variables in the data set is given by:
+```{r}
+pairs(Auto)
+```
+
+(b) Matrix of correlations between the variables(except name variable, which is qualitative) using the function cor():
+```{r}
+cor(Auto[1:7])
+```
+WHAT ABOUT ORIGIN IN THIS CASE, IT'S ALSO QUALITATIVE
+
+(c) Multiple linear regression with mpg as the response and all other variables except name as the predictors: 
+```{r}
+lm.fit = lm(mpg~., data=Auto)
+summary(lm.fit)
+```
+i) <br/>
+
+ii) Predictors: Displacement, weight, year and origin appear to have a statistically significant relationship to the response. <br/>
+
+iii) The year variable suggests that there is an increase of --- mpg per year. <br/>
+
+(d)
+```{r}
+par(mfrow = c(2, 2))
+plot(lm.fit)
+```
+
+(e)
+
+(f) To keep the investigation of transformations
+manageable, try transformations of the `weight` variable
+only.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(log(weight), mpg)
+plot(sqrt(weight), mpg)
+plot((weight)^2, mpg)
+```
+
+## Question 3 (Chapter 4, #4, 7 marks)
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+(e)
+
+
+## Question 4 (Chapter 4, #10 parts (a)-(h), 9 marks)
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+(e)
+
+(f)
+
+(g)
+
+(h)
+
+(i) DO NOT HAND IN THIS PART (though you are, of course,
+free to do it on your own).
