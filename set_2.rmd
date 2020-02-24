@@ -1,0 +1,166 @@
+
+## Question 2 (Ch6, #9, 12 marks)
+
+(a) (0 marks)
+To make everyone's results comparable, please
+select your test set with the following.
+(Note that we scale all columns, including the response.)
+
+```{r}
+library(ISLR)
+data(College)
+library(dplyr)
+College <- mutate(College,Private = as.numeric(Private=="Yes"))
+College <- data.frame(lapply(College,scale))
+dim(College) # 777 rows, use 111 as test
+set.seed(1)
+testset <- sample(1:777,size=111)
+College.test <- College[testset,]
+College.train <- College[-testset,]
+```
+
+(b) (2 marks) Fit a linear model using least squares on the training set, and report the test error obtained.
+```{r}
+set.seed(1)
+model_linear <- lm(Apps ~ ., data = College.train) 
+pred_linear <- predict(model_linear, College.test)
+error_linear = mean((pred_linear - College.test$Apps)^2) 
+error_linear
+```
+The test error for linear model using least squares is 0.05985039
+
+(c) (2 marks)  Fit a ridge regression model on the training set, with λ chosen by cross-validation. Report the test error obtained.
+```{r}
+library(glmnet)
+train_matrix <- model.matrix(Apps ~ ., data = College.train)
+test_matrix <- model.matrix(Apps ~ ., data = College.test)
+grid_ridge <- 10 ^ seq(10, -2, length = 100)
+fit_ridge <- glmnet(train_matrix, College.train$Apps, alpha = 0, lambda = grid_ridge, thresh = 1e-12)
+cv_ridge <- cv.glmnet(train_matrix, College.train$Apps, alpha = 0, lambda = grid_ridge, thresh = 1e-12)
+lambda_ridge <- cv_ridge$lambda.min
+lambda_ridge
+
+pred_ridge <- predict(fit_ridge, s = lambda_ridge, newx = test_matrix)
+mean((pred_ridge - College.test$Apps)^2)
+
+```
+The test error for ridge regression model is 0.05601797
+
+(d) (2 marks) Fit a lasso model on the training set, with λ chosen by crossvalidation. Report the test error obtained, along with the number of non-zero coefficient estimates.
+```{r}
+fit_lasso <- glmnet(train_matrix, College.train$Apps, alpha = 1, lambda = grid, thresh = 1e-12)
+cv_lasso <- cv.glmnet(train_matrix, College.train$Apps, alpha = 1, lambda = grid, thresh = 1e-12)
+lambda_lasso <- cv_lasso$lambda.min
+print(lambda_lasso)
+#[1] 0.01
+
+pred_lasso <- predict(fit_lasso, s = lambda_lasso, newx = test_matrix) 
+x = mean((pred_lasso - College.test$Apps)^2)
+print(x)
+#[1] 0.05051465
+
+#the test MSE is also higher for ridge regression than for least squares.
+predict(fit_lasso, s = lambda_lasso, type = "coefficients")
+```
+The test error for lasso model is 0.05051465
+
+(e) (2 marks) Fit a PCR model on the training set, with M chosen by crossvalidation. Report the test error obtained, along with the value of M selected by cross-validation.
+```{r}
+library(pls)
+fit_pcr <- pcr(Apps ~ ., data = College.train, scale = TRUE, validation = "CV") 
+validationplot(fit_pcr, val.type = "MSEP")
+
+```
+```{r}
+pred_pcr <- predict(fit_pcr, College.test, ncomp = 10) 
+mean((pred_pcr - College.test$Apps)^2)
+```
+The test error obtained using PCR model is 0.08586442
+
+(f) (2 marks) Fit a PLS model on the training set, with M chosen by crossvalidation. Report the test error obtained, along with the value of M selected by cross-validation.
+```{r}
+fit_pls <- plsr(Apps ~ ., data = College.train, scale = TRUE, validation = "CV") 
+validationplot(fit_pls, val.type = "MSEP")
+```
+```{r}
+pred_pls <- predict(fit_pls, College.test, ncomp = 10) 
+mean((pred_pls - College.test$Apps)^2)
+
+```
+The test error obtained using PLS model is 0.05750825
+
+(g) (2 marks) Comment on the results obtained. How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these five approaches?
+```{r}
+test.avg <- mean(College.test$Apps)
+lm_result <- 1 - mean((pred_linear - College.test$Apps)^2) / mean((test.avg - College.test$Apps) ^2)
+ridge_result <- 1 - mean((pred_ridge - College.test$Apps)^2) / mean((test.avg - College.test $Apps)^2)
+lasso_result <- 1 - mean((pred_lasso - College.test$Apps)^2) / mean((test.avg - College.test $Apps)^2)
+pcr_result <- 1 - mean((pred_pcr - College.test$Apps)^2) / mean((test.avg - College.test$Apps)^2)
+pls_result <- 1 - mean((pred_pls - College.test$Apps)^2) / mean((test.avg - College.test$Apps)^2)
+barplot(c(lm_result, ridge_result, lasso_result, pcr_result, pls_result), col="#4CBB17", names.arg=c("Linear", "Ridge", "Lasso", "PCR", "PLS"), main="Error Comparisons")
+
+```
+##Inference
+The test errors for each model is as follows:
+*linear model: 0.05985039
+*ridge model: 0.05601797
+*lasso model: 0.05051465
+*PCR model: 0.08586442
+*PLS model: 0.05750825
+
+From the R2 test, we can see that all the models predict the result with a very high accuracy except PCR. The test error for PCR is also highly deviant from the rest of the models (it gives an error of 0.08 where others range in the domain of 0.05-0.06).
+
+## Question 3 (Ch7, #6, 8 marks)
+
+(a) (5 marks) Perform polynomial regression to predict “wage” using “age”. Use cross-validation to select the optimal degree d for the polynomial. What degree was chosen, and how does this compare to the results of hypothesis testing using ANOVA ? Make a plot of the resulting polynomial fit to the data.
+
+```{r}
+library (ISLR)
+data(Wage)
+attach(Wage)
+cv <- function(df,k=10,seed=1) { # Setup
+  set.seed(seed)
+  folds <- sample(1:k,size=nrow(Wage),replace=TRUE) 
+  validErr <- rep(NA,k)
+  
+  # Genearting training and test data for all folds
+  for(i in 1:k) {
+    test_fold <- Wage[folds==i,]
+    train_fold <- Wage[folds!=i,]
+    fold_fit <- lm(wage ~ poly(age, df),data=trainWage) 
+    fold_pred <- predict(fold_fit,test_fold)
+    validErr[i] <- mean((fold_pred - test_fold$wage)^2) 
+  }
+  mean_err = mean(validErr)
+  return (mean_err)
+}
+
+k<-10; nDf <- 10; seed <- 4; cvErrs <- rep(NA,nDf) 
+for(df in 1:nDf){ # loop over df
+  cvErrs[df] <- cv(df,k,seed) }
+
+plot(cvErrs, xlab = "Degree", ylab = "Test MSE", type = "l") 
+opt_deg <- which.min(cvErrs)
+points(opt_deg, cvErrs[opt_deg], col = "#4CBB17", cex = 2, pch = 20)
+
+#Getting optimal degree using ANOVA
+first_fit <- lm(wage~age, data=Wage)
+second_fit <- lm(wage~poly(age,2), data=Wage) 
+third_fit <- lm(wage~poly(age,3), data=Wage) 
+fourth_fit <- lm(wage~poly(age,4), data=Wage) 
+fifth_fit <- lm(wage~poly(age,5), data=Wage) 
+anova(first_fit,second_fit,third_fit,fourth_fit,fifth_fit)
+
+#plot of resulting polynomial fit
+res_fit <- lm(wage~poly(age,3), data=Wage)
+agelims <- range(age)
+age.grid <- seq(from=agelims[1], to=agelims[2])
+preds <- predict(res_fit, newdata=list(age=age.grid)) 
+plot(age, wage, xlim=agelims, cex=0.5, col="darkgrey") 
+title("Resulting Polynomial Fit")
+lines(age.grid, preds, lwd=2, col="#4CBB17")
+
+```
+
+
+(b) (3 marks)
